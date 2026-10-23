@@ -6,6 +6,16 @@ uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-23
+
+### Added
+- Publish a multi-architecture container image for each release tag.
+- Support immutable release-tag image metadata and embed the release version in
+  the container binary.
+
+### Changed
+- Describe the authenticated HTTP MCP transport in the server registry metadata.
+
 ## [0.4.2] - 2026-10-23
 
 ### Added
