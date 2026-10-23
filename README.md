@@ -169,7 +169,7 @@ See the [cache contract](docs/architecture.md#update-idempotency) and
 
 ## Configuration
 
-Exactly **12** product environment variables:
+Exactly **13** product environment variables:
 
 | Variable | Default | Contract |
 |----------|---------|----------|
@@ -185,6 +185,7 @@ Exactly **12** product environment variables:
 | `ICLOUD_MCP_ENABLE_MAIL_WRITE` | `false` | Three IMAP mutation tools. |
 | `ICLOUD_MCP_ENABLE_MAIL_SEND` | `false` | `send_message` (independent of Mail write). |
 | `ICLOUD_MCP_SMTP_ALLOWED_RECIPIENTS` | none | Required if send is on. Use exact addresses or literal `*`. Literal `*` causes a boot warning. Use exact addresses when possible. |
+| `ICLOUD_MCP_HTTP_BEARER_TOKEN` | none | Required with `-http`. A 32+ character bearer token; `file://` supported. Never place it in a URL or client configuration committed to source control. |
 
 Booleans accept only unset, `0`, `false`, `1`, or `true`. Invalid values cause a
 boot failure. The server validates the configuration **before** network access.
@@ -207,6 +208,23 @@ Use `-version` to print the version. The optional
 endpoints return JSON with domains and rate limits. The optional
 `-audit-format=json|text` flag selects the mutation audit format on stderr.
 The default format is `json`.
+
+### HTTP MCP transport
+
+The default transport is stdio. Use `-http` to serve authenticated MCP
+Streamable HTTP at `/mcp` instead:
+
+```bash
+export ICLOUD_MCP_HTTP_BEARER_TOKEN='generate-a-random-token-at-least-32-characters-long'
+icloud-mcp -http 127.0.0.1:8080
+# MCP endpoint: http://127.0.0.1:8080/mcp
+```
+
+HTTP mode requires `ICLOUD_MCP_HTTP_BEARER_TOKEN` and accepts only
+`Authorization: Bearer <token>`. It is stateless and disables streaming, so it
+works behind a private load-balanced Kubernetes Service without sticky sessions.
+It does not enable CORS or TLS. Keep it private; terminate TLS and enforce
+network policy at a trusted reverse proxy or ingress. Do not expose it publicly.
 
 ### Dates
 

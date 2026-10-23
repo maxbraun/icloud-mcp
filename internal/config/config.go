@@ -45,6 +45,7 @@ const (
 	mailAddressEnvVar           = "ICLOUD_MAIL_ADDRESS"
 	mailPasswordEnvVar          = "ICLOUD_MAIL_PASSWORD"
 	smtpAllowedRecipientsEnvVar = "ICLOUD_MCP_SMTP_ALLOWED_RECIPIENTS"
+	httpBearerTokenEnvVar       = "ICLOUD_MCP_HTTP_BEARER_TOKEN"
 )
 
 // RecipientPolicy is an immutable exact-address SMTP recipient policy. Its
@@ -137,6 +138,7 @@ type Config struct {
 	SMTPRecipientPolicy   RecipientPolicy // immutable exact-match policy for SMTP authorization
 	Timeout               time.Duration   // 30s constant
 	LogLevel              slog.Level      // ICLOUD_MCP_LOG_LEVEL (debug/info/warn/error), default info
+	HTTPBearerToken       string          // ICLOUD_MCP_HTTP_BEARER_TOKEN (file:// supported), required by -http
 
 	// DefaultLocation is the timezone used to interpret a start/end value
 	// supplied WITHOUT an explicit RFC3339 offset (e.g. "2026-07-01T14:00:00",
@@ -187,6 +189,13 @@ func Load() (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
+	httpBearerToken := ""
+	if os.Getenv(httpBearerTokenEnvVar) != "" {
+		httpBearerToken, err = loadCredential(httpBearerTokenEnvVar)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	loc, err := loadDefaultLocation(os.Getenv(defaultTZEnvVar))
 	if err != nil {
@@ -231,6 +240,7 @@ func Load() (*Config, error) {
 		SMTPRecipientPolicy:   recipientPolicy,
 		Timeout:               icloudTimeout,
 		LogLevel:              parseLogLevel(os.Getenv("ICLOUD_MCP_LOG_LEVEL")),
+		HTTPBearerToken:       httpBearerToken,
 		DefaultLocation:       loc,
 	}
 
@@ -273,6 +283,11 @@ func (c *Config) Validate() error {
 	}
 	if len(c.Password) < 8 {
 		return fmt.Errorf("ICLOUD_PASSWORD must be at least 8 characters: use an app-specific password generated on appleid.apple.com")
+	}
+	if c.HTTPBearerToken != "" {
+		if hasCredentialControl(c.HTTPBearerToken) || len(c.HTTPBearerToken) < 32 {
+			return fmt.Errorf("%s must be at least 32 characters and must not contain CR, LF, or NUL", httpBearerTokenEnvVar)
+		}
 	}
 	if c.EnableMailWrite && !c.EnableMail {
 		return fmt.Errorf("%s requires %s=true", enableMailWriteEnvVar, enableMailEnvVar)

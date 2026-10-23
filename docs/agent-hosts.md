@@ -68,6 +68,21 @@ curl --fail http://127.0.0.1:8797/healthz
 The endpoint returns JSON status, enabled domains, and rate limits. The listener
 accepts loopback addresses only. Give each process a different port.
 
+## HTTP MCP (private deployments)
+
+For a private Kubernetes Service or reverse-proxy deployment, start the binary
+in HTTP mode instead of stdio:
+
+```bash
+icloud-mcp -http 0.0.0.0:8080
+```
+
+Set `ICLOUD_MCP_HTTP_BEARER_TOKEN` to a 32+ character secret (or a secure
+`file://` secret). Clients call `/mcp` with `Authorization: Bearer <token>`.
+The transport is stateless, non-streaming, and has no browser CORS support.
+Keep the Service private and terminate TLS before traffic leaves the trusted
+network; never publish this credential-bearing MCP endpoint directly.
+
 ## Multiple accounts
 
 One process uses one iCloud identity. Start a separate process for each account.

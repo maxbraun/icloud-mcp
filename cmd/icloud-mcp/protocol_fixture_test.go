@@ -73,7 +73,7 @@ func runProtocolFixture(mode string) error {
 			return err
 		}
 	}
-	return runServer(cfg, security.AuditFormatJSON, "", calendar, addressBooks, mail, os.Stdin, protocolOutput)
+	return runServer(cfg, security.AuditFormatJSON, "", "", calendar, addressBooks, mail, os.Stdin, protocolOutput)
 }
 
 // protocolDAV never opens a socket. The real DAV clients parse these responses

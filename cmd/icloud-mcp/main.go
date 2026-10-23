@@ -69,6 +69,7 @@ var handlerSlots = make(chan struct{}, maxInFlightHandlers)
 
 func main() {
 	healthAddr := flag.String("health", "", "HTTP healthcheck address (e.g. 127.0.0.1:8797), disabled if empty")
+	httpAddr := flag.String("http", "", "authenticated MCP Streamable HTTP listen address (e.g. 127.0.0.1:8080), disabled if empty")
 	auditFormatFlag := flag.String("audit-format", "json", "mutation audit format on stderr: json (default) or text")
 	showVersion := flag.Bool("version", false, "print the version and exit")
 	flag.Parse()
@@ -103,7 +104,7 @@ func main() {
 	ic := icloud.NewClient(doer, security.ICloudBaseURL, security.IsICloudHost)
 	contactsService, mailService, err := newOptionalServices(cfg)
 	if err == nil {
-		err = runServer(cfg, auditFormat, *healthAddr, ic, contactsService, mailService, os.Stdin, os.Stdout)
+		err = runServer(cfg, auditFormat, *healthAddr, *httpAddr, ic, contactsService, mailService, os.Stdin, os.Stdout)
 	}
 	if err != nil {
 		log.Printf("server failed: %s", newBootRedactor(cfg).Redact(err.Error()))
@@ -111,9 +112,9 @@ func main() {
 	}
 }
 
-// runServer shares discovery, registration, redaction, and stdio with the
-// fixture executable. Only main constructs production transports.
-func runServer(cfg *config.Config, auditFormat security.AuditFormat, healthAddr string, ic *icloud.Client, contactsService contacts.Service, mailService maildomain.Service, stdin io.Reader, stdout io.Writer) error {
+// runServer shares discovery, registration, redaction, and transport setup
+// with the fixture executable. Only main constructs production transports.
+func runServer(cfg *config.Config, auditFormat security.AuditFormat, healthAddr, httpAddr string, ic *icloud.Client, contactsService contacts.Service, mailService maildomain.Service, stdin io.Reader, stdout io.Writer) error {
 	// 2. Redaction: ALL stderr goes through the RedactingWriter from here on.
 	// Calendar credentials are always covered. Mail credentials and SASL PLAIN
 	// variants are added only when the Mail domain is enabled.
@@ -185,6 +186,9 @@ func runServer(cfg *config.Config, auditFormat security.AuditFormat, healthAddr 
 	if cfg.DefaultLocation == nil || cfg.DefaultLocation == time.UTC {
 		slog.Warn("ICLOUD_MCP_DEFAULT_TZ is unset or UTC: bare local start/end times are interpreted as UTC; set ICLOUD_MCP_DEFAULT_TZ to the calendar owner's IANA timezone (e.g. Europe/Paris) to avoid offset mistakes by the calling agent")
 	}
+	if httpAddr != "" && cfg.HTTPBearerToken == "" {
+		return fmt.Errorf("ICLOUD_MCP_HTTP_BEARER_TOKEN is required when -http is set")
+	}
 	slog.Info("server started",
 		"readOnly", cfg.ReadOnly,
 		"contactsEnabled", cfg.EnableContacts,
@@ -194,11 +198,16 @@ func runServer(cfg *config.Config, auditFormat security.AuditFormat, healthAddr 
 		"healthcheckActive", healthEnabled,
 		"toolCount", plan.ToolCount(),
 	)
-
-	// 7. Stdio uses mcp-go's custom-reader Listen API so input can be bounded.
 	// The error logger MUST use the redacting writer, otherwise transport logs
 	// bypass stderr redaction.
 	errLogger := log.New(stderr, "", log.LstdFlags)
+
+	if httpAddr != "" {
+		slog.Info("HTTP MCP transport active", "address", httpAddr, "endpoint", "/mcp")
+		return serveHTTP(s, httpAddr, cfg.HTTPBearerToken, errLogger, red)
+	}
+
+	// 7. Stdio uses mcp-go's custom-reader Listen API so input can be bounded.
 	return serveBoundedStdio(s, stdin, stdout, errLogger, red)
 }
 
@@ -327,6 +336,9 @@ func newBootRedactor(cfg *config.Config) *security.Redactor {
 			Username: cfg.MailAddress,
 			Password: cfg.MailPassword,
 		})
+	}
+	if cfg.HTTPBearerToken != "" {
+		credentials = append(credentials, security.CredentialPair{Password: cfg.HTTPBearerToken})
 	}
 	return security.NewRedactor(security.RedactionVariants(credentials...)...)
 }

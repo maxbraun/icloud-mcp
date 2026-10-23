@@ -625,6 +625,32 @@ func TestConfigValidatePreservesMailPasswordMinimum(t *testing.T) {
 	}
 }
 
+func TestConfigValidateHTTPBearerToken(t *testing.T) {
+	base := Config{Email: "calendar@example.com", Password: "calendar-app-password"}
+	for _, tc := range []struct {
+		name  string
+		token string
+		want  bool
+	}{
+		{name: "unset remains valid", want: true},
+		{name: "strong token", token: "SENTINEL-HTTP-BEARER-TOKEN-0123456789", want: true},
+		{name: "too short", token: "too-short", want: false},
+		{name: "control character", token: "SENTINEL-HTTP-BEARER-TOKEN-012345\n6789", want: false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := base
+			cfg.HTTPBearerToken = tc.token
+			err := cfg.Validate()
+			if (err == nil) != tc.want {
+				t.Fatalf("Validate() error = %v, want valid=%v", err, tc.want)
+			}
+			if err != nil && strings.Contains(err.Error(), tc.token) {
+				t.Fatalf("HTTP bearer token leaked in validation error: %v", err)
+			}
+		})
+	}
+}
+
 func TestConfigValidateRequiresPlainCalendarAddress(t *testing.T) {
 	cfg := Config{Email: "Calendar Owner <calendar@example.com>", Password: "calendar-app-password"}
 	err := cfg.Validate()
