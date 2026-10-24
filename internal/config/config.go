@@ -42,8 +42,11 @@ const (
 	enableMailEnvVar            = "ICLOUD_MCP_ENABLE_MAIL"
 	enableMailWriteEnvVar       = "ICLOUD_MCP_ENABLE_MAIL_WRITE"
 	enableMailSendEnvVar        = "ICLOUD_MCP_ENABLE_MAIL_SEND"
+	enableMailArchiveEnvVar     = "ICLOUD_MCP_ENABLE_MAIL_ARCHIVE"
 	mailAddressEnvVar           = "ICLOUD_MAIL_ADDRESS"
 	mailPasswordEnvVar          = "ICLOUD_MAIL_PASSWORD"
+	mailArchiveMailboxEnvVar    = "ICLOUD_MCP_MAIL_ARCHIVE_MAILBOX"
+	mailArchiveSendersEnvVar    = "ICLOUD_MCP_MAIL_ARCHIVE_SENDERS"
 	smtpAllowedRecipientsEnvVar = "ICLOUD_MCP_SMTP_ALLOWED_RECIPIENTS"
 	httpBearerTokenEnvVar       = "ICLOUD_MCP_HTTP_BEARER_TOKEN"
 )
@@ -132,8 +135,11 @@ type Config struct {
 	EnableMail            bool            // ICLOUD_MCP_ENABLE_MAIL
 	EnableMailWrite       bool            // ICLOUD_MCP_ENABLE_MAIL_WRITE, configured value
 	EnableMailSend        bool            // ICLOUD_MCP_ENABLE_MAIL_SEND, configured value
+	EnableMailArchive     bool            // ICLOUD_MCP_ENABLE_MAIL_ARCHIVE, configured value
 	MailAddress           string          // ICLOUD_MAIL_ADDRESS (file:// supported)
 	MailPassword          string          // ICLOUD_MAIL_PASSWORD (file:// supported), NEVER log it
+	MailArchiveMailbox    string          // exact destination returned by IMAP LIST
+	MailArchiveSenders    []string        // normalized exact newsletter From addresses
 	SMTPAllowedRecipients []string        // normalized exact addresses, or a single literal "*"
 	SMTPRecipientPolicy   RecipientPolicy // immutable exact-match policy for SMTP authorization
 	Timeout               time.Duration   // 30s constant
@@ -177,6 +183,10 @@ func Load() (*Config, error) {
 		return nil, err
 	}
 	enableMailSend, err := parseBool(enableMailSendEnvVar, os.Getenv(enableMailSendEnvVar))
+	if err != nil {
+		return nil, err
+	}
+	enableMailArchive, err := parseBool(enableMailArchiveEnvVar, os.Getenv(enableMailArchiveEnvVar))
 	if err != nil {
 		return nil, err
 	}
@@ -234,14 +244,26 @@ func Load() (*Config, error) {
 		EnableMail:            enableMail,
 		EnableMailWrite:       enableMailWrite,
 		EnableMailSend:        enableMailSend,
+		EnableMailArchive:     enableMailArchive,
 		MailAddress:           mailAddress,
 		MailPassword:          mailPassword,
+		MailArchiveMailbox:    strings.TrimSpace(os.Getenv(mailArchiveMailboxEnvVar)),
 		SMTPAllowedRecipients: recipientPolicy.Recipients(),
 		SMTPRecipientPolicy:   recipientPolicy,
 		Timeout:               icloudTimeout,
 		LogLevel:              parseLogLevel(os.Getenv("ICLOUD_MCP_LOG_LEVEL")),
 		HTTPBearerToken:       httpBearerToken,
 		DefaultLocation:       loc,
+	}
+	if raw := os.Getenv(mailArchiveSendersEnvVar); raw != "" {
+		for _, part := range strings.Split(raw, ",") {
+			address, parseErr := normalizePlainAddress(part)
+			if parseErr != nil {
+				return nil, fmt.Errorf("invalid %s: expected exact plain email addresses", mailArchiveSendersEnvVar)
+			}
+			cfg.MailArchiveSenders = append(cfg.MailArchiveSenders, address)
+		}
+		sort.Strings(cfg.MailArchiveSenders)
 	}
 
 	if err := cfg.Validate(); err != nil {
@@ -295,6 +317,12 @@ func (c *Config) Validate() error {
 	if c.EnableMailSend && !c.EnableMail {
 		return fmt.Errorf("%s requires %s=true", enableMailSendEnvVar, enableMailEnvVar)
 	}
+	if c.EnableMailArchive && (!c.EnableMail || !c.EnableMailWrite) {
+		return fmt.Errorf("%s requires %s=true and %s=true", enableMailArchiveEnvVar, enableMailEnvVar, enableMailWriteEnvVar)
+	}
+	if c.EnableMailArchive && (c.MailArchiveMailbox == "" || len(c.MailArchiveSenders) == 0) {
+		return fmt.Errorf("%s requires %s and %s", enableMailArchiveEnvVar, mailArchiveMailboxEnvVar, mailArchiveSendersEnvVar)
+	}
 	if c.EnableMail {
 		if hasCredentialControl(c.MailAddress) {
 			return fmt.Errorf("invalid %s: must be a full email address", mailAddressEnvVar)
@@ -341,6 +369,13 @@ func (c *Config) EffectiveMailWrite() bool {
 // EffectiveMailSend reports whether SMTP submission may be registered.
 func (c *Config) EffectiveMailSend() bool {
 	return c.EnableMail && c.EnableMailSend && !c.ReadOnly && c.SMTPRecipientPolicy.Configured()
+}
+
+// EffectiveMailArchive reports whether the positive-list, dry-run-first
+// newsletter archive workflow may be registered.
+func (c *Config) EffectiveMailArchive() bool {
+	return c.EnableMail && c.EnableMailWrite && c.EnableMailArchive && !c.ReadOnly &&
+		c.MailArchiveMailbox != "" && len(c.MailArchiveSenders) > 0
 }
 
 func recipientPolicyFromAddresses(addresses []string) (RecipientPolicy, error) {

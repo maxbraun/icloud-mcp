@@ -38,6 +38,10 @@ type Deps struct {
 	// (never email, secrets, hosts, shards, or paths).
 	ReadOnly      bool
 	HealthEnabled bool
+
+	// MailArchive is a boot-validated, positive-list policy. It is intentionally
+	// kept out of generic move_message so automation cannot move arbitrary mail.
+	MailArchive MailArchivePolicy
 }
 
 // CapabilityPlan is the immutable, effective registration plan. Its private
@@ -49,17 +53,20 @@ type CapabilityPlan struct {
 	mailEnabled     bool
 	mailMutations   bool
 	mailSend        bool
+	mailArchive     bool
 }
 
 // NewCapabilityPlan applies the global read-only and domain enable gates to
 // the configured capability booleans.
-func NewCapabilityPlan(readOnly, contactsEnabled, mailEnabled, mailMutations, mailSend bool) CapabilityPlan {
+func NewCapabilityPlan(readOnly, contactsEnabled, mailEnabled, mailMutations, mailSend bool, mailArchive ...bool) CapabilityPlan {
+	archive := len(mailArchive) == 1 && mailArchive[0]
 	return CapabilityPlan{
 		readOnly:        readOnly,
 		contactsEnabled: contactsEnabled,
 		mailEnabled:     mailEnabled,
 		mailMutations:   mailEnabled && mailMutations && !readOnly,
 		mailSend:        mailEnabled && mailSend && !readOnly,
+		mailArchive:     mailEnabled && mailMutations && archive && !readOnly,
 	}
 }
 
@@ -86,6 +93,8 @@ func (p CapabilityPlan) MailMutationsEnabled() bool { return p.mailMutations }
 // MailSendEnabled reports whether SMTP submission is effective.
 func (p CapabilityPlan) MailSendEnabled() bool { return p.mailSend }
 
+func (p CapabilityPlan) MailArchiveEnabled() bool { return p.mailArchive }
+
 // RegisteredTools returns a sorted copy of the exact registration manifest.
 func (p CapabilityPlan) RegisteredTools() []string {
 	names := calendarReadToolNames()
@@ -102,6 +111,9 @@ func (p CapabilityPlan) RegisteredTools() []string {
 		names = append(names, mailReadToolNames()...)
 		if p.mailMutations {
 			names = append(names, mailMutationToolNames()...)
+			if p.mailArchive {
+				names = append(names, mailArchiveToolNames()...)
+			}
 		}
 		if p.mailSend {
 			names = append(names, "send_message")
@@ -140,6 +152,10 @@ func mailReadToolNames() []string {
 
 func mailMutationToolNames() []string {
 	return []string{"set_message_flags", "move_message", "trash_message"}
+}
+
+func mailArchiveToolNames() []string {
+	return []string{"preview_newsletter_archive", "archive_newsletter_batch"}
 }
 
 // defaultLocationName returns the display name for tool descriptions and error
@@ -192,8 +208,8 @@ func RegisterUnified(s *server.MCPServer, deps Deps, plan CapabilityPlan) []stri
 	}
 	if plan.MailEnabled() {
 		registered = append(registered, RegisterMail(s, MailDeps{
-			Service: deps.MailService, Audit: deps.Audit, Redactor: deps.Redactor,
-		}, plan.MailMutationsEnabled(), plan.MailSendEnabled())...)
+			Service: deps.MailService, Audit: deps.Audit, Redactor: deps.Redactor, Archive: deps.MailArchive,
+		}, plan.MailMutationsEnabled(), plan.MailSendEnabled(), plan.MailArchiveEnabled())...)
 	}
 	s.AddTool(newICloudCapabilitiesTool(), icloudCapabilitiesHandler(deps, plan))
 	registered = append(registered, "icloud_capabilities")

@@ -141,6 +141,7 @@ func runServer(cfg *config.Config, auditFormat security.AuditFormat, healthAddr,
 		cfg.EnableMail,
 		cfg.EffectiveMailWrite(),
 		cfg.EffectiveMailSend(),
+		cfg.EffectiveMailArchive(),
 	)
 
 	// 4. iCloud service + boot-time discovery (validates the credentials
@@ -165,6 +166,10 @@ func runServer(cfg *config.Config, auditFormat security.AuditFormat, healthAddr,
 		DefaultLocation: cfg.DefaultLocation,
 		Version:         version,
 		HealthEnabled:   healthEnabled,
+		MailArchive: mcptools.MailArchivePolicy{
+			Destination: cfg.MailArchiveMailbox,
+			Senders:     append([]string(nil), cfg.MailArchiveSenders...),
+		},
 	}, plan)
 
 	// 6. Optional healthcheck (off by default).
