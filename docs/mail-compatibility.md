@@ -277,3 +277,10 @@ Reads run sequentially under one 25-second deadline and existing service rate li
 Batch bodies default to 16 KiB and allow at most 20 KiB each. Total output remains bounded.
 A transient error stops dispatch. Pending entries were not read and can be resubmitted after retry guidance.
 Result-omitted entries were read; request those individually. complete does not mean allSucceeded.
+
+## Action evidence
+
+Mutation and error results include outcome with state, evidence, verified, retrySafe, and reconciliation.
+IMAP acknowledgement, SMTP acceptance, and HTTP submission are not independent verification.
+Existing status fields remain compatible. No result infers provider-specific success from response text.
+Blocked actions are distinct from failed and outcome_unknown actions. Never automatically repeat uncertain actions.

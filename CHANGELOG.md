@@ -1,5 +1,7 @@
 # Changelog
 
+- Separate generic Mail action evidence from verified business outcomes.
+
 - Add generic mailbox search and message-read batches with per-item cursors and partial results.
 
 - Add protected message links and explicitly confirmed, allowlisted HTTPS actions.

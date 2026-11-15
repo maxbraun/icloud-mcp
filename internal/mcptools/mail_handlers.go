@@ -20,6 +20,7 @@ import (
 )
 
 type mailErrorPayload struct {
+	Outcome        mailOutcome                  `json:"outcome"`
 	Code           string                       `json:"code"`
 	Message        string                       `json:"message"`
 	Retryable      bool                         `json:"retryable,omitempty"`
@@ -150,7 +151,7 @@ func setMessageFlagsHandler(deps MailDeps) server.ToolHandlerFunc {
 			return mailServiceErrorResult(deps, "setting message flags", err), nil
 		}
 		mailAudit(deps, tool, "message", resource, "success")
-		return writeJSON(mailRedactor(deps), result), nil
+		return mailActionResult(deps, result, "imap_response", "acknowledged"), nil
 	}
 }
 
@@ -185,7 +186,7 @@ func moveMessageHandler(deps MailDeps) server.ToolHandlerFunc {
 			return mailServiceErrorResult(deps, "moving message", err), nil
 		}
 		mailAudit(deps, tool, "message", resource, "success")
-		return writeJSON(mailRedactor(deps), result), nil
+		return mailActionResult(deps, result, "imap_response", "acknowledged"), nil
 	}
 }
 
@@ -211,7 +212,7 @@ func trashMessageHandler(deps MailDeps) server.ToolHandlerFunc {
 			return mailServiceErrorResult(deps, "trashing message", err), nil
 		}
 		mailAudit(deps, tool, "message", resource, "success")
-		return writeJSON(mailRedactor(deps), result), nil
+		return mailActionResult(deps, result, "imap_response", "acknowledged"), nil
 	}
 }
 
@@ -245,7 +246,7 @@ func sendMessageHandler(deps MailDeps) server.ToolHandlerFunc {
 			status = "outcome_unknown"
 		}
 		mailAudit(deps, tool, "submission", resource, status)
-		return writeJSON(mailRedactor(deps), result), nil
+		return mailActionResult(deps, result, "smtp_response", string(result.Status)), nil
 	}
 }
 
@@ -261,6 +262,7 @@ func mailServiceErrorResult(deps MailDeps, operation string, err error) *mcp.Cal
 			payload.Status = maildomain.SendOutcomeUnknown
 		}
 	}
+	payload.Outcome = mailFailureOutcome(err)
 	result := writeJSON(mailRedactor(deps), payload)
 	result.IsError = true
 	return result
