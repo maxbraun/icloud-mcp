@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 # Static, reproducible build. Keep this digest aligned with the release builder
 # in the Makefile.
-FROM golang:1.26.10@sha256:672c944cfd07599b5f1bb179869270cdc94c6254e41db4d431259693cb286b82 AS build
+FROM golang:1.26.11@sha256:957952ae74dc010608717144399a59a2c6e82ea03d63be1c7ff6577c5a135f93 AS build
 
 WORKDIR /src
 COPY go.mod go.sum ./
