@@ -18,6 +18,7 @@ import (
 	maildomain "github.com/ThomasCrouzet/icloud-mcp/internal/mail"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
+	"golang.org/x/time/rate"
 )
 
 const mailLinkTTL = 15 * time.Minute
@@ -32,10 +33,12 @@ type mailLinks struct {
 	mu      sync.Mutex
 	entries map[string]storedMailLink
 	hosts   []string
+	busy    chan struct{}
+	limit   *rate.Limiter
 }
 
 func newMailLinks(hosts []string) *mailLinks {
-	return &mailLinks{entries: make(map[string]storedMailLink), hosts: append([]string(nil), hosts...)}
+	return &mailLinks{entries: make(map[string]storedMailLink), hosts: append([]string(nil), hosts...), busy: make(chan struct{}, 1), limit: rate.NewLimiter(rate.Every(3*time.Second), 2)}
 }
 func (s *mailLinks) put(raw, method string) string {
 	s.mu.Lock()
@@ -125,6 +128,15 @@ func executeMailLinkHandler(deps MailDeps) server.ToolHandlerFunc {
 		if deps.Links == nil {
 			return mailValidationResult(deps, fmt.Errorf("link execution is disabled")), nil
 		}
+		if !deps.Links.limit.Allow() {
+			return mailServiceErrorResult(deps, "executing link", &maildomain.Error{Code: maildomain.CodeRateLimited, Message: "link action rate limit reached", Retryable: true, RetryAfter: 3 * time.Second}), nil
+		}
+		select {
+		case deps.Links.busy <- struct{}{}:
+			defer func() { <-deps.Links.busy }()
+		default:
+			return mailServiceErrorResult(deps, "executing link", &maildomain.Error{Code: maildomain.CodeRateLimited, Message: "another link action is running", Retryable: true, RetryAfter: 3 * time.Second}), nil
+		}
 		entry, ok := deps.Links.take(ref, time.Now())
 		if !ok {
 			return mailValidationResult(deps, fmt.Errorf("reference is expired, consumed, or unknown; read the message again")), nil
@@ -176,7 +188,13 @@ func executeMailLinkHandler(deps MailDeps) server.ToolHandlerFunc {
 		} else if response.StatusCode >= 300 && response.StatusCode < 400 {
 			status = "redirect_required"
 		}
-		mailAudit(deps, "execute_mail_link", "link", ref, "success")
+		auditStatus := "error"
+		if status == "submitted" {
+			auditStatus = "success"
+		} else if status == "access_required" {
+			auditStatus = "denied"
+		}
+		mailAudit(deps, "execute_mail_link", "link", ref, auditStatus)
 		return writeJSON(mailRedactor(deps), map[string]any{"status": status, "httpStatus": response.StatusCode, "reference": ref, "verified": false, "body": page.Body, "links": page.Links, "reconciliation": "HTTP status does not verify the business outcome. Read preferences or obtain explicit confirmation independently."}), nil
 	}
 }
@@ -202,10 +220,13 @@ func publicMailIP(raw string) bool {
 		return false
 	}
 	ip = ip.Unmap()
+	if ip.Is6() && !netip.MustParsePrefix("2000::/3").Contains(ip) {
+		return false
+	}
 	if !ip.IsGlobalUnicast() || ip.IsPrivate() || ip.IsLoopback() || ip.IsLinkLocalUnicast() {
 		return false
 	}
-	for _, prefix := range []string{"100.64.0.0/10", "192.0.0.0/24", "192.0.2.0/24", "198.18.0.0/15", "198.51.100.0/24", "203.0.113.0/24", "240.0.0.0/4", "2001:db8::/32", "64:ff9b::/96", "2002::/16"} {
+	for _, prefix := range []string{"0.0.0.0/8", "2001::/23", "100.64.0.0/10", "192.0.0.0/24", "192.0.2.0/24", "198.18.0.0/15", "198.51.100.0/24", "203.0.113.0/24", "240.0.0.0/4", "2001:db8::/32", "64:ff9b::/96", "2002::/16"} {
 		if netip.MustParsePrefix(prefix).Contains(ip) {
 			return false
 		}

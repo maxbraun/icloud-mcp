@@ -50,3 +50,16 @@ func TestMailLinkDestinationPolicy(t *testing.T) {
 		}
 	}
 }
+
+func TestMailLinkExpiryAndSpecialAddressSpace(t *testing.T) {
+	s := newMailLinks(nil)
+	ref := s.put("https://example.com/x?x=exact", "GET")
+	if _, ok := s.take(ref, time.Now().Add(mailLinkTTL)); ok {
+		t.Fatal("expired reference survived")
+	}
+	for _, raw := range []string{"0.1.2.3", "2001::1234", "64:ff9b:1::1234"} {
+		if publicMailIP(raw) {
+			t.Fatalf("special-purpose IP accepted: %s", raw)
+		}
+	}
+}
