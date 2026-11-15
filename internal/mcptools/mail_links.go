@@ -167,14 +167,15 @@ func executeMailLinkHandler(deps MailDeps) server.ToolHandlerFunc {
 			mailAudit(deps, "execute_mail_link", "link", ref, "outcome_unknown")
 			return writeJSON(mailRedactor(deps), map[string]any{"status": "outcome_unknown", "reference": ref, "reconciliation": "Do not retry automatically. Inspect the destination state independently."}), nil
 		}
-		defer response.Body.Close()
+		defer func() { _ = response.Body.Close() }()
 		content, readErr := io.ReadAll(io.LimitReader(response.Body, 32769))
 		bodyText := ""
 		if readErr == nil && len(content) <= 32768 {
 			media := strings.ToLower(strings.Split(response.Header.Get("Content-Type"), ";")[0])
-			if media == "text/html" {
+			switch media {
+			case "text/html":
 				bodyText = maildomain.ReadableHTML(string(content))
-			} else if media == "text/plain" {
+			case "text/plain":
 				bodyText = strings.ToValidUTF8(string(content), "?")
 			}
 		}
@@ -189,9 +190,10 @@ func executeMailLinkHandler(deps MailDeps) server.ToolHandlerFunc {
 			status = "redirect_required"
 		}
 		auditStatus := "error"
-		if status == "submitted" {
+		switch status {
+		case "submitted":
 			auditStatus = "success"
-		} else if status == "access_required" {
+		case "access_required":
 			auditStatus = "denied"
 		}
 		mailAudit(deps, "execute_mail_link", "link", ref, auditStatus)
