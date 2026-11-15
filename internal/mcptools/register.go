@@ -155,7 +155,7 @@ func mailMutationToolNames() []string {
 }
 
 func mailArchiveToolNames() []string {
-	return []string{"preview_newsletter_archive", "archive_newsletter_batch"}
+	return []string{"preview_archive", "archive_batch"}
 }
 
 // defaultLocationName returns the display name for tool descriptions and error

@@ -385,3 +385,11 @@ before opening a pull request.
 ## License
 
 MIT. See [LICENSE](LICENSE) and [third-party notices](THIRD_PARTY_NOTICES.md).
+
+### Generic message archiving
+
+Use preview_archive to review candidates and archive_batch with explicit identities and confirmation=true.
+The workflow supports any message category. Sender, age, and read-state filters are optional.
+Select a destination per call or configure ICLOUD_MCP_MAIL_ARCHIVE_MAILBOX as a default.
+ICLOUD_MCP_MAIL_ARCHIVE_SENDERS optionally restricts exact senders; it is not required.
+Mail write and archive gates remain required. Trash/Junk targets and permanent deletion are not supported.

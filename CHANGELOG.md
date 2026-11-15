@@ -1,5 +1,8 @@
 # Changelog
 
+- Generalize archive previews and batches to explicit messages, optional filters, and caller-selected safe destinations.
+- Preserve partial archive results and per-mailbox preview cursors.
+
 This file documents all notable project changes. It uses the
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format. The project
 uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).

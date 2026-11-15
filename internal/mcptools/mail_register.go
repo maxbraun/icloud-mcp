@@ -18,15 +18,13 @@ type MailDeps struct {
 	Archive  MailArchivePolicy
 }
 
-// MailArchivePolicy is an immutable positive-list policy for newsletter-only
-// automation. Exact sender matching means banks, security mail, and every
-// unlisted sender are excluded by construction.
+// MailArchivePolicy is an immutable positive-list policy for generic message
+// automation. Sender filters are optional. Explicit identities, destination validation,
+// and confirmation govern each mutation.
 type MailArchivePolicy struct {
 	Destination string
 	Senders     []string
 }
-
-func (p MailArchivePolicy) enabled() bool { return p.Destination != "" && len(p.Senders) > 0 }
 
 // RegisterMail registers Mail reads and the independently gated mutation and
 // send tools. It returns tool names in registration order for capability plans.
@@ -51,11 +49,11 @@ func RegisterMail(s *server.MCPServer, deps MailDeps, allowMutations, allowSend 
 		)
 	}
 	if len(allowArchive) == 1 && allowArchive[0] {
-		if !allowMutations || !deps.Archive.enabled() {
-			panic("mcptools: archive workflow requires mutations and a positive-list policy")
+		if !allowMutations {
+			panic("mcptools: archive workflow requires mutations")
 		}
 		registrations = append(registrations,
-			registration{newPreviewNewsletterArchiveTool(), previewNewsletterArchiveHandler(deps)},
+			registration{newPreviewArchiveTool(), previewArchiveHandler(deps)},
 			registration{newArchiveNewsletterBatchTool(), archiveNewsletterBatchHandler(deps)},
 		)
 	}

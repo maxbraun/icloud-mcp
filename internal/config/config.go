@@ -139,7 +139,7 @@ type Config struct {
 	MailAddress           string          // ICLOUD_MAIL_ADDRESS (file:// supported)
 	MailPassword          string          // ICLOUD_MAIL_PASSWORD (file:// supported), NEVER log it
 	MailArchiveMailbox    string          // exact destination returned by IMAP LIST
-	MailArchiveSenders    []string        // normalized exact newsletter From addresses
+	MailArchiveSenders    []string        // optional exact sender filter; empty selects any sender
 	SMTPAllowedRecipients []string        // normalized exact addresses, or a single literal "*"
 	SMTPRecipientPolicy   RecipientPolicy // immutable exact-match policy for SMTP authorization
 	Timeout               time.Duration   // 30s constant
@@ -320,9 +320,7 @@ func (c *Config) Validate() error {
 	if c.EnableMailArchive && (!c.EnableMail || !c.EnableMailWrite) {
 		return fmt.Errorf("%s requires %s=true and %s=true", enableMailArchiveEnvVar, enableMailEnvVar, enableMailWriteEnvVar)
 	}
-	if c.EnableMailArchive && (c.MailArchiveMailbox == "" || len(c.MailArchiveSenders) == 0) {
-		return fmt.Errorf("%s requires %s and %s", enableMailArchiveEnvVar, mailArchiveMailboxEnvVar, mailArchiveSendersEnvVar)
-	}
+
 	if c.EnableMail {
 		if hasCredentialControl(c.MailAddress) {
 			return fmt.Errorf("invalid %s: must be a full email address", mailAddressEnvVar)
@@ -372,10 +370,9 @@ func (c *Config) EffectiveMailSend() bool {
 }
 
 // EffectiveMailArchive reports whether the positive-list, dry-run-first
-// newsletter archive workflow may be registered.
+// message archive workflow may be registered.
 func (c *Config) EffectiveMailArchive() bool {
-	return c.EnableMail && c.EnableMailWrite && c.EnableMailArchive && !c.ReadOnly &&
-		c.MailArchiveMailbox != "" && len(c.MailArchiveSenders) > 0
+	return c.EnableMail && c.EnableMailWrite && c.EnableMailArchive && !c.ReadOnly
 }
 
 func recipientPolicyFromAddresses(addresses []string) (RecipientPolicy, error) {
