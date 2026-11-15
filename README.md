@@ -388,3 +388,6 @@ MIT. See [LICENSE](LICENSE) and [third-party notices](THIRD_PARTY_NOTICES.md).
 
 HTML text extraction uses golang.org/x/net/html, a maintained, non-executing HTML tokenizer.
 This direct dependency handles malformed markup without custom HTML parsing.
+
+Set ICLOUD_MCP_MAIL_LINK_HOSTS to reviewed, exact destination hosts for explicitly confirmed message-link actions.
+No destinations are allowed by default. Mail write permissions remain required.

@@ -12,9 +12,11 @@ import (
 
 // MailDeps groups the dependencies shared by Mail tool handlers.
 type MailDeps struct {
-	Service  maildomain.Service
-	Audit    *security.AuditLogger
-	Redactor *security.Redactor
+	LinkHosts []string
+	Links     *mailLinks
+	Service   maildomain.Service
+	Audit     *security.AuditLogger
+	Redactor  *security.Redactor
 }
 
 // RegisterMail registers Mail reads and the independently gated mutation and
@@ -23,6 +25,7 @@ func RegisterMail(s *server.MCPServer, deps MailDeps, allowMutations, allowSend 
 	if deps.Redactor == nil {
 		panic("mcptools: Mail tools require a non-nil redactor")
 	}
+	deps.Links = newMailLinks(deps.LinkHosts)
 	type registration struct {
 		tool    mcp.Tool
 		handler server.ToolHandlerFunc
@@ -37,6 +40,7 @@ func RegisterMail(s *server.MCPServer, deps MailDeps, allowMutations, allowSend 
 			registration{newSetMessageFlagsTool(), setMessageFlagsHandler(deps)},
 			registration{newMoveMessageTool(), moveMessageHandler(deps)},
 			registration{newTrashMessageTool(), trashMessageHandler(deps)},
+			registration{newExecuteMailLinkTool(), executeMailLinkHandler(deps)},
 		)
 	}
 	if allowSend {

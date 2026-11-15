@@ -256,3 +256,14 @@ Scripts, styles, embedded content, and resource loads are not supported. All con
 Message headers expose bounded List-* fields, Auto-Submitted, and Precedence as arrays.
 Duplicate fields remain distinct. Values are untrusted sender claims, not authorization or authentication evidence.
 List-Unsubscribe-Post is metadata only. Reading a message never performs an action.
+
+## Protected links
+
+Message URLs become single-use references before credential redaction. References expire after 15 minutes.
+HTML links retain their labels. The store holds at most 1000 references; each message exposes at most 50.
+execute_mail_link requires Mail writes, confirmation=true, and ICLOUD_MCP_MAIL_LINK_HOSTS.
+The comma-separated host list uses exact names; no wildcard or implicit subdomain match applies.
+HTTPS uses a separate credential-free transport. Public DNS addresses are validated and pinned before connecting.
+Redirects, IP literals, private destinations, proxies, cookies, custom payloads, and retries are not supported.
+RFC 8058 metadata selects a fixed POST; other links use GET. Neither method proves the business outcome.
+Multi-tenant hosts must isolate MCP registrations per authenticated principal. References are process-local bearer capabilities.

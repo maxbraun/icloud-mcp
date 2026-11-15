@@ -20,6 +20,7 @@ type Deps struct {
 	Service         icloud.Service
 	ContactsService contacts.Service
 	MailService     maildomain.Service
+	MailLinkHosts   []string
 	Audit           *security.AuditLogger
 	Redactor        *security.Redactor
 
@@ -139,7 +140,7 @@ func mailReadToolNames() []string {
 }
 
 func mailMutationToolNames() []string {
-	return []string{"set_message_flags", "move_message", "trash_message"}
+	return []string{"set_message_flags", "move_message", "trash_message", "execute_mail_link"}
 }
 
 // defaultLocationName returns the display name for tool descriptions and error
@@ -192,7 +193,7 @@ func RegisterUnified(s *server.MCPServer, deps Deps, plan CapabilityPlan) []stri
 	}
 	if plan.MailEnabled() {
 		registered = append(registered, RegisterMail(s, MailDeps{
-			Service: deps.MailService, Audit: deps.Audit, Redactor: deps.Redactor,
+			Service: deps.MailService, Audit: deps.Audit, Redactor: deps.Redactor, LinkHosts: deps.MailLinkHosts,
 		}, plan.MailMutationsEnabled(), plan.MailSendEnabled())...)
 	}
 	s.AddTool(newICloudCapabilitiesTool(), icloudCapabilitiesHandler(deps, plan))

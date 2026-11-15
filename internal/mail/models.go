@@ -122,7 +122,16 @@ type Warning struct {
 	Message string `json:"message"`
 }
 
+type MessageLink struct {
+	Reference string    `json:"reference"`
+	Host      string    `json:"host"`
+	Source    string    `json:"source"`
+	Method    string    `json:"method"`
+	ExpiresAt time.Time `json:"expiresAt"`
+}
+
 type Message struct {
+	Links   []MessageLink       `json:"links,omitempty"`
 	Headers map[string][]string `json:"headers,omitempty"`
 	MessageSummary
 	ReplyTo               []Address    `json:"replyTo,omitempty"`

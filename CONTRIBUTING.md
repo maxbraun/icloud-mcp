@@ -27,7 +27,8 @@ refuse to replace existing output files. They also make SHA-256 checksums.
   written justification to the README.
 - Do not add `os/exec`, telemetry, private or reverse-engineered Apple APIs,
   browser automation, or UI automation. Do not add network destinations
-  outside the Calendar, Contacts, IMAP, and SMTP allowlists. Do not write to
+  outside the Calendar, Contacts, IMAP, and SMTP allowlists, except the separate
+  credential-free Mail link transport with its explicit host and public-IP policies. Do not write to
   disk. Read files only for boot-time `file://` secrets. These reads accept only
   regular files with mode 0600 or stricter.
 - Keep separate credentials, transports, dialers, rate limits, semaphores, and

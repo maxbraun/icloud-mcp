@@ -1,5 +1,7 @@
 # Changelog
 
+- Add protected message links and explicitly confirmed, allowlisted HTTPS actions.
+
 - Expose bounded structured Mail automation and list metadata.
 
 - Add bounded inert text extraction for HTML-only Mail messages.

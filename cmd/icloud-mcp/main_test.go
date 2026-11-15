@@ -352,7 +352,7 @@ func TestIsMutationToolName(t *testing.T) {
 	for _, name := range []string{
 		"create_event", "update_event", "delete_event",
 		"create_contact", "update_contact", "delete_contact",
-		"set_message_flags", "move_message", "trash_message", "send_message",
+		"set_message_flags", "move_message", "trash_message", "execute_mail_link", "send_message",
 	} {
 		if !isMutationToolName(name) {
 			t.Fatalf("isMutationToolName(%q) = false", name)
