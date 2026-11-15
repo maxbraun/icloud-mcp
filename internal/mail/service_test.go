@@ -372,7 +372,7 @@ func TestSafeReadRetriesAtMostOnceBeforeAnyResult(t *testing.T) {
 	}
 }
 
-func TestGetMessageUsesExaminePeekAndOmitsHTML(t *testing.T) {
+func TestGetMessageUsesExaminePeekAndRendersHTML(t *testing.T) {
 	t.Parallel()
 	imap := &fakeIMAP{
 		selected: imapadapter.SelectedMailbox{UIDValidity: 9, UIDNext: 3},
@@ -396,8 +396,9 @@ func TestGetMessageUsesExaminePeekAndOmitsHTML(t *testing.T) {
 	}
 
 	html := &fakeIMAP{selected: imapadapter.SelectedMailbox{UIDValidity: 9, UIDNext: 3}, metadata: []imapadapter.Message{{UID: 2, Envelope: imapadapter.Envelope{}, Parts: []imapadapter.BodyPart{{Path: []int{1}, ContentType: "text/html"}}}}}
+	html.body = imapadapter.BodyData{MIMEHeader: []byte("Content-Type: text/html; charset=utf-8\r\n\r\n"), Body: []byte("<style>bad</style><script>bad</script><p>Hello <b>world</b></p><img src=\"https://tracker.example/pixel\">")}
 	message, err = testService(t, html, nil, false, false).GetMessage(context.Background(), GetMessageInput{Mailbox: "INBOX", UIDValidity: 9, UID: 2})
-	if err != nil || message.BodyUnavailableReason != "html_only" || strings.Contains(strings.Join(html.log, ","), "body-peek") {
+	if err != nil || message.Body != "Hello world" || !strings.Contains(strings.Join(html.log, ","), "body-peek") {
 		t.Fatalf("HTML-only handling failed: %+v, %v", message, err)
 	}
 }

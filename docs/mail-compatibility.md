@@ -89,7 +89,7 @@ section.
 
 Read tools select mailboxes read-only and use PEEK. They must not set Seen.
 
-`get_message` first gets metadata, BODYSTRUCTURE, and four additional headers:
+`get_message` first gets metadata, BODYSTRUCTURE, and curated headers:
 Message-ID, In-Reply-To, References, and Reply-To. It selects the first inline
 `text/plain` leaf without attachment or filename semantics. Then, bounded
 partial PEEK requests get the MIME header and body. It never gets an unbounded
@@ -97,13 +97,13 @@ partial PEEK requests get the MIME header and body. It never gets an unbounded
 
 The result contains selected envelope and header metadata. It also contains
 decoded plain text and attachment metadata. It never contains raw MIME, raw
-headers, Received or authentication headers, HTML, or attachment payloads.
+headers, Received or authentication headers, active HTML, or attachment payloads.
 BODYSTRUCTURE supplies attachment metadata without content retrieval. The
 client treats attached `message/rfc822` parts and their descendants as
 attachments. It does not inspect them for body text.
 
-If no plain text exists, the result has metadata with `html_only` or
-`no_plain_text`. If wire or decoded text is too large, the client omits the body
+If no plain text exists, the first non-attachment HTML part supplies inert text.
+If no supported text part exists, the result reports `no_text_part`. If wire or decoded text is too large, the client omits the body
 and adds a bounded warning. Unsafe decoding has the same result. The client can truncate an otherwise valid
 body at a valid UTF-8 boundary. This truncation keeps the result within 256 KiB.
 Metadata that cannot fit returns `payload_too_large`.
@@ -245,3 +245,8 @@ client does not assume this behavior.
 
 Each attempt uses the applicable rate budget. All operations have a 25 second
 MCP tool deadline. The active context also limits each socket deadline.
+
+## Inert HTML text
+
+HTML-only messages return bounded text with bodySource=text/html. Plain text remains preferred.
+Scripts, styles, embedded content, and resource loads are not supported. All content remains untrusted.

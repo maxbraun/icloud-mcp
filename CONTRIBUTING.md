@@ -9,7 +9,7 @@ make build   # local binary under bin/
 ```
 
 You must use Go 1.26.0 or newer. `make release VERSION=v1.2.3` uses a
-digest-pinned Go 1.26.10 image. It builds and packages static linux/arm64.
+digest-pinned Go 1.26.11 image. It builds and packages static linux/arm64.
 `make release-all VERSION=v1.2.3` uses the host toolchain. It cross-compiles
 and packages linux/amd64, linux/arm64, and darwin/arm64. GitHub tag releases
 use this target after CI and gitleaks succeed.

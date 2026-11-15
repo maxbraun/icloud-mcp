@@ -107,7 +107,7 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-## golang.org/x/text v0.43.0 and golang.org/x/time v0.16.0
+## golang.org/x/net v0.62.0, golang.org/x/text v0.43.0, and golang.org/x/time v0.16.0
 
 Copyright 2009 The Go Authors.
 
