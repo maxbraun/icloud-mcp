@@ -15,11 +15,20 @@ type MailDeps struct {
 	Service  maildomain.Service
 	Audit    *security.AuditLogger
 	Redactor *security.Redactor
+	Archive  MailArchivePolicy
+}
+
+// MailArchivePolicy is an immutable optional-filter policy for generic message
+// automation. Sender filters are optional. Explicit identities, destination validation,
+// and confirmation govern each mutation.
+type MailArchivePolicy struct {
+	Destination string
+	Senders     []string
 }
 
 // RegisterMail registers Mail reads and the independently gated mutation and
 // send tools. It returns tool names in registration order for capability plans.
-func RegisterMail(s *server.MCPServer, deps MailDeps, allowMutations, allowSend bool) []string {
+func RegisterMail(s *server.MCPServer, deps MailDeps, allowMutations, allowSend bool, allowArchive ...bool) []string {
 	if deps.Redactor == nil {
 		panic("mcptools: Mail tools require a non-nil redactor")
 	}
@@ -37,6 +46,15 @@ func RegisterMail(s *server.MCPServer, deps MailDeps, allowMutations, allowSend 
 			registration{newSetMessageFlagsTool(), setMessageFlagsHandler(deps)},
 			registration{newMoveMessageTool(), moveMessageHandler(deps)},
 			registration{newTrashMessageTool(), trashMessageHandler(deps)},
+		)
+	}
+	if len(allowArchive) == 1 && allowArchive[0] {
+		if !allowMutations {
+			panic("mcptools: archive workflow requires mutations")
+		}
+		registrations = append(registrations,
+			registration{newPreviewArchiveTool(), previewArchiveHandler(deps)},
+			registration{newArchiveNewsletterBatchTool(), archiveNewsletterBatchHandler(deps)},
 		)
 	}
 	if allowSend {

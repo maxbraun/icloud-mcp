@@ -245,3 +245,14 @@ client does not assume this behavior.
 
 Each attempt uses the applicable rate budget. All operations have a 25 second
 MCP tool deadline. The active context also limits each socket deadline.
+
+## Generic archive workflow
+
+Enable ICLOUD_MCP_ENABLE_MAIL_ARCHIVE with Mail writes enabled and read-only mode disabled.
+preview_archive is a dry run. archive_batch requires explicit UIDs, UIDVALIDITY, and confirmation=true.
+The destination argument overrides the optional ICLOUD_MCP_MAIL_ARCHIVE_MAILBOX default.
+ICLOUD_MCP_MAIL_ARCHIVE_SENDERS is an optional exact sender filter. Empty permits any sender, not only newsletters.
+Age filtering defaults to zero (disabled). seen_only defaults to false. Rechecks use the same optional filters.
+Preview pagination returns UIDVALIDITY and nextBeforeUid. Use both for the next page.
+Selectable non-Trash/Junk target checks and UIDVALIDITY checks remain in the Mail service.
+On failure, the response preserves moved items, failedUid, and pendingUids. Never blindly replay a partial batch.

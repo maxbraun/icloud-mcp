@@ -7,10 +7,10 @@ GO          ?= go
 EVIDENCE_DIR ?=
 
 # Use a fixed digest for the release builder image to make builds reproducible.
-# The module minimum is Go 1.26.0; this digest tracks golang:1.26.10.
-# To update the digest, use: docker pull golang:1.26.10 &&
-# docker image inspect golang:1.26.10 --format '{{index .RepoDigests 0}}'.
-GOLANG_IMAGE ?= golang:1.26.10@sha256:672c944cfd07599b5f1bb179869270cdc94c6254e41db4d431259693cb286b82
+# The module minimum is Go 1.26.0; this digest tracks golang:1.26.11.
+# To update the digest, use: docker pull golang:1.26.11 &&
+# docker image inspect golang:1.26.11 --format '{{index .RepoDigests 0}}'.
+GOLANG_IMAGE ?= golang:1.26.11@sha256:957952ae74dc010608717144399a59a2c6e82ea03d63be1c7ff6577c5a135f93
 
 # Release archives: linux/amd64, linux/arm64, darwin/arm64.
 # All binaries are static (CGO_ENABLED=0), with build paths and debug data removed.
@@ -47,7 +47,7 @@ check-release-clean:
 			echo "release requires a clean Git worktree" >&2; exit 1; \
 		}
 
-release: check-release-version check-release-clean ## Static linux/arm64 archive with a fixed Go 1.26.10 container.
+release: check-release-version check-release-clean ## Static linux/arm64 archive with a fixed Go 1.26.11 container.
 	@set -eu; \
 		mkdir -p "$(DIST_DIR)"; \
 		dist="$$(cd "$(DIST_DIR)" && pwd -P)"; \

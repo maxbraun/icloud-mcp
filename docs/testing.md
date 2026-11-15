@@ -5,7 +5,7 @@
 `make lint` uses golangci-lint v2.15.0 and supports Go 1.27.3.
 The linter requires Go 1.26 or newer to build. With an older host toolchain,
 Go can download a compatible version when automatic toolchain selection is enabled.
-The CI lint step uses Go 1.27.3. Other CI checks and release builds use Go 1.26.10.
+The CI lint step uses Go 1.27.3. Other CI checks and release builds use Go 1.26.11.
 
 Run the complete local gates:
 
@@ -13,7 +13,7 @@ Run the complete local gates:
 GOMAXPROCS=2 GOFLAGS=-p=1 make test # go test ./... -race -cover
 GOMAXPROCS=2 GOFLAGS=-p=1 make lint # go vet plus pinned golangci-lint
 GOMAXPROCS=2 GOFLAGS=-p=1 make build # host-toolchain development binary
-make release VERSION=v1.2.3 # packaged linux/arm64 in pinned Go 1.26.10 container
+make release VERSION=v1.2.3 # packaged linux/arm64 in pinned Go 1.26.11 container
 ```
 
 Useful focused commands for the unified domains:
@@ -235,7 +235,7 @@ security source guards. Package coverage floors are:
 
 Tag releases publish only after the CI and gitleaks jobs succeed on the same
 ref. See the `release` job in `.github/workflows/ci.yml`. GitHub archives use
-`make release-all` with Go 1.26.10 pinned. The setting is
+`make release-all` with Go 1.26.11 pinned. The setting is
 `check-latest: false`.
 
 Local `make release` remains the digest-pinned container path for linux/arm64.
