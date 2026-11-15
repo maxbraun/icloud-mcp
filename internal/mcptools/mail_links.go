@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
-	"net"
 	"net/http"
 	"net/netip"
 	"net/url"
@@ -16,6 +15,7 @@ import (
 	"time"
 
 	maildomain "github.com/ThomasCrouzet/icloud-mcp/internal/mail"
+	"github.com/ThomasCrouzet/icloud-mcp/internal/security"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 	"golang.org/x/time/rate"
@@ -148,7 +148,7 @@ func executeMailLinkHandler(deps MailDeps) server.ToolHandlerFunc {
 		}
 		ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
 		defer cancel()
-		transport := &http.Transport{Proxy: nil, DisableKeepAlives: true, TLSHandshakeTimeout: 5 * time.Second, ResponseHeaderTimeout: 10 * time.Second, MaxResponseHeaderBytes: 16384, DialContext: publicMailDial}
+		transport := security.NewMailLinkTransport(deps.Links.hosts)
 		defer transport.CloseIdleConnections()
 		client := &http.Client{Transport: transport, Timeout: 15 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
 		body := ""
@@ -216,39 +216,4 @@ func mailLinkURL(raw string, hosts []string) (*url.URL, error) {
 	}
 	return nil, fmt.Errorf("destination is not in the boot-configured exact host allowlist")
 }
-func publicMailIP(raw string) bool {
-	ip, err := netip.ParseAddr(raw)
-	if err != nil {
-		return false
-	}
-	ip = ip.Unmap()
-	if ip.Is6() && !netip.MustParsePrefix("2000::/3").Contains(ip) {
-		return false
-	}
-	if !ip.IsGlobalUnicast() || ip.IsPrivate() || ip.IsLoopback() || ip.IsLinkLocalUnicast() {
-		return false
-	}
-	for _, prefix := range []string{"0.0.0.0/8", "2001::/23", "100.64.0.0/10", "192.0.0.0/24", "192.0.2.0/24", "198.18.0.0/15", "198.51.100.0/24", "203.0.113.0/24", "240.0.0.0/4", "2001:db8::/32", "64:ff9b::/96", "2002::/16"} {
-		if netip.MustParsePrefix(prefix).Contains(ip) {
-			return false
-		}
-	}
-	return true
-}
-func publicMailDial(ctx context.Context, network, address string) (net.Conn, error) {
-	host, port, err := net.SplitHostPort(address)
-	if err != nil || port != "443" {
-		return nil, fmt.Errorf("invalid destination")
-	}
-	ips, err := net.DefaultResolver.LookupNetIP(ctx, "ip", host)
-	if err != nil || len(ips) == 0 {
-		return nil, fmt.Errorf("destination lookup failed")
-	}
-	for _, ip := range ips {
-		if !publicMailIP(ip.String()) {
-			return nil, fmt.Errorf("non-public destination denied")
-		}
-	}
-	// Connect to the validated address, not a second DNS lookup. TLS retains hostname verification.
-	return (&net.Dialer{Timeout: 5 * time.Second}).DialContext(ctx, network, net.JoinHostPort(ips[0].String(), port))
-}
+func publicMailIP(raw string) bool { return security.IsPublicMailLinkIP(raw) }

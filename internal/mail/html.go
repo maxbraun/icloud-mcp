@@ -3,6 +3,7 @@ package mail
 import (
 	"golang.org/x/net/html"
 	"io"
+	"net/url"
 	"strings"
 )
 
@@ -28,7 +29,8 @@ func readableHTML(raw string) string {
 			if tag == "a" {
 				for {
 					key, value, more := z.TagAttr()
-					if string(key) == "href" && len(value) <= 4096 && (strings.HasPrefix(string(value), "https://") || strings.HasPrefix(string(value), "http://")) {
+					parsed, parseErr := url.Parse(string(value))
+					if string(key) == "href" && len(value) <= 4096 && parseErr == nil && (parsed.Scheme == "https" || parsed.Scheme == "http") {
 						out.WriteString(" [")
 						out.Write(value)
 						out.WriteString("] ")
