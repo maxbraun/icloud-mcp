@@ -165,7 +165,7 @@ func executeMailLinkHandler(deps MailDeps) server.ToolHandlerFunc {
 		response, err := client.Do(request)
 		if err != nil {
 			mailAudit(deps, "execute_mail_link", "link", ref, "outcome_unknown")
-			return writeJSON(mailRedactor(deps), map[string]any{"status": "outcome_unknown", "reference": ref, "reconciliation": "Do not retry automatically. Inspect the destination state independently."}), nil
+			return mailActionResult(deps, map[string]any{"status": "outcome_unknown", "reference": ref, "reconciliation": "Do not retry automatically. Inspect the destination state independently."}, "dispatch_uncertain", "outcome_unknown"), nil
 		}
 		defer func() { _ = response.Body.Close() }()
 		content, readErr := io.ReadAll(io.LimitReader(response.Body, 32769))
@@ -197,7 +197,7 @@ func executeMailLinkHandler(deps MailDeps) server.ToolHandlerFunc {
 			auditStatus = "denied"
 		}
 		mailAudit(deps, "execute_mail_link", "link", ref, auditStatus)
-		return writeJSON(mailRedactor(deps), map[string]any{"status": status, "httpStatus": response.StatusCode, "reference": ref, "verified": false, "body": page.Body, "links": page.Links, "reconciliation": "HTTP status does not verify the business outcome. Read preferences or obtain explicit confirmation independently."}), nil
+		return mailActionResult(deps, map[string]any{"status": status, "httpStatus": response.StatusCode, "reference": ref, "verified": false, "body": page.Body, "links": page.Links, "reconciliation": "HTTP status does not verify the business outcome. Read preferences or obtain explicit confirmation independently."}, "http_response", status), nil
 	}
 }
 func mailLinkURL(raw string, hosts []string) (*url.URL, error) {
