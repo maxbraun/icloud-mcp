@@ -18,7 +18,7 @@ type MailDeps struct {
 	Archive  MailArchivePolicy
 }
 
-// MailArchivePolicy is an immutable positive-list policy for generic message
+// MailArchivePolicy is an immutable optional-filter policy for generic message
 // automation. Sender filters are optional. Explicit identities, destination validation,
 // and confirmation govern each mutation.
 type MailArchivePolicy struct {

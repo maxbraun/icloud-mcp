@@ -369,7 +369,7 @@ func (c *Config) EffectiveMailSend() bool {
 	return c.EnableMail && c.EnableMailSend && !c.ReadOnly && c.SMTPRecipientPolicy.Configured()
 }
 
-// EffectiveMailArchive reports whether the positive-list, dry-run-first
+// EffectiveMailArchive reports whether the generic, dry-run-first
 // message archive workflow may be registered.
 func (c *Config) EffectiveMailArchive() bool {
 	return c.EnableMail && c.EnableMailWrite && c.EnableMailArchive && !c.ReadOnly

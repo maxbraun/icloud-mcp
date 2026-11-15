@@ -39,8 +39,8 @@ type Deps struct {
 	ReadOnly      bool
 	HealthEnabled bool
 
-	// MailArchive is a boot-validated, positive-list policy. It is intentionally
-	// kept out of generic move_message so automation cannot move arbitrary mail.
+	// MailArchive holds optional default destination and sender filters.
+	// Archive batches require explicit identities and confirmation.
 	MailArchive MailArchivePolicy
 }
 
