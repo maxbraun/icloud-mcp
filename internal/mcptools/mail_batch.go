@@ -138,7 +138,7 @@ func mailBatchHandler(deps MailDeps, search bool) server.ToolHandlerFunc {
 				batch.AllSucceeded = false
 			}
 			batch.Items[i] = item
-			encoded, _ := json.Marshal(batch)
+			encoded, _ := json.MarshalIndent(batch, "", "  ")
 			if len(encoded) > maildomain.MaxResultBytes-2048 {
 				batch.Items[i] = mailBatchItem{Index: i, Status: "result_omitted", Result: map[string]any{"code": "payload_too_large", "reconciliation": "Request this item individually; it was already read."}}
 				batch.AllSucceeded = false
