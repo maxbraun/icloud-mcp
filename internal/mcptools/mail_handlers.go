@@ -96,6 +96,7 @@ func getMessageHandler(deps MailDeps) server.ToolHandlerFunc {
 		if err != nil {
 			return mailServiceErrorResult(deps, "getting message", err), nil
 		}
+		protectMessageLinks(&result, deps.Links)
 		return writeJSON(mailRedactor(deps), result), nil
 	}
 }

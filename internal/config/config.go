@@ -125,6 +125,7 @@ func (p RecipientPolicy) Recipients() []string {
 
 // Config holds the configuration validated at startup.
 type Config struct {
+	MailLinkHosts         []string        // ICLOUD_MCP_MAIL_LINK_HOSTS, exact HTTPS destinations
 	Email                 string          // ICLOUD_EMAIL (file:// supported)
 	Password              string          // ICLOUD_PASSWORD (file:// supported), NEVER log it
 	ReadOnly              bool            // ICLOUD_MCP_READ_ONLY
@@ -234,6 +235,7 @@ func Load() (*Config, error) {
 		EnableMail:            enableMail,
 		EnableMailWrite:       enableMailWrite,
 		EnableMailSend:        enableMailSend,
+		MailLinkHosts:         strings.FieldsFunc(os.Getenv("ICLOUD_MCP_MAIL_LINK_HOSTS"), func(r rune) bool { return r == ',' || r == ' ' }),
 		MailAddress:           mailAddress,
 		MailPassword:          mailPassword,
 		SMTPAllowedRecipients: recipientPolicy.Recipients(),

@@ -25,6 +25,19 @@ func readableHTML(raw string) string {
 			if skip != "" {
 				continue
 			}
+			if tag == "a" {
+				for {
+					key, value, more := z.TagAttr()
+					if string(key) == "href" && len(value) <= 4096 && (strings.HasPrefix(string(value), "https://") || strings.HasPrefix(string(value), "http://")) {
+						out.WriteString(" [")
+						out.Write(value)
+						out.WriteString("] ")
+					}
+					if !more {
+						break
+					}
+				}
+			}
 			switch tag {
 			case "script", "style", "iframe", "object", "template", "svg", "head":
 				skip = tag
@@ -46,3 +59,6 @@ func readableHTML(raw string) string {
 		}
 	}
 }
+
+// ReadableHTML extracts inert text for bounded external link responses.
+func ReadableHTML(raw string) string { return readableHTML(raw) }

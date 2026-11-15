@@ -140,7 +140,7 @@ func TestCapabilityPlanAllCombinationsAndRegistrationFormula(t *testing.T) {
 				wantCount += 3
 			}
 			if effectiveMutation {
-				wantCount += 3
+				wantCount += 4
 			}
 			if effectiveSend {
 				wantCount++
