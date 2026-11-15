@@ -274,7 +274,7 @@ func (s *Session) FetchMetadata(uids []uint32, includeHeaders bool) ([]Message, 
 	if includeHeaders {
 		options.BodySection = []*imap.FetchItemBodySection{{
 			Specifier:    imap.PartSpecifierHeader,
-			HeaderFields: []string{"Message-ID", "In-Reply-To", "References", "Reply-To"},
+			HeaderFields: []string{"Message-ID", "In-Reply-To", "References", "Reply-To", "List-Id", "List-Help", "List-Subscribe", "List-Unsubscribe", "List-Unsubscribe-Post", "List-Archive", "List-Post", "Auto-Submitted", "Precedence"},
 			Partial:      &imap.SectionPartial{Size: maxHeaderBytes + 1},
 			Peek:         true,
 		}}
@@ -509,7 +509,21 @@ func parseCuratedHeaders(data []byte) (CuratedHeaders, error) {
 			return CuratedHeaders{}, err
 		}
 	}
-	return CuratedHeaders{MessageID: messageID, InReplyTo: inReplyTo, References: references, ReplyTo: reply}, nil
+	fields := make(map[string][]string)
+	for _, name := range []string{"List-Id", "List-Help", "List-Subscribe", "List-Unsubscribe", "List-Unsubscribe-Post", "List-Archive", "List-Post", "Auto-Submitted", "Precedence"} {
+		it := entity.Header.FieldsByKey(name)
+		for it.Next() {
+			value := it.Value()
+			if err := boundedString(value); err != nil {
+				return CuratedHeaders{}, err
+			}
+			if len(fields[name]) >= 16 {
+				return CuratedHeaders{}, &Error{Kind: ErrorTooLarge}
+			}
+			fields[name] = append(fields[name], value)
+		}
+	}
+	return CuratedHeaders{Fields: fields, MessageID: messageID, InReplyTo: inReplyTo, References: references, ReplyTo: reply}, nil
 }
 
 func (s *Session) FetchBodyPart(uid uint32, path []int) (BodyData, error) {

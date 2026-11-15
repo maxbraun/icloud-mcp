@@ -85,6 +85,7 @@ type BodyPart struct {
 }
 
 type CuratedHeaders struct {
+	Fields     map[string][]string
 	MessageID  string
 	InReplyTo  []string
 	References []string

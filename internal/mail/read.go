@@ -47,6 +47,7 @@ func (s *Client) GetMessage(ctx context.Context, input GetMessageInput) (Message
 		if len(result.InReplyTo) == 0 {
 			result.InReplyTo = append([]string(nil), item.Envelope.InReplyTo...)
 		}
+		result.Headers = item.Headers.Fields
 		result.References = append([]string(nil), item.Headers.References...)
 		if item.Headers.MessageID != "" {
 			result.MessageID = item.Headers.MessageID
