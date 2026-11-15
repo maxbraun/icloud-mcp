@@ -385,3 +385,6 @@ before opening a pull request.
 ## License
 
 MIT. See [LICENSE](LICENSE) and [third-party notices](THIRD_PARTY_NOTICES.md).
+
+HTML text extraction uses golang.org/x/net/html, a maintained, non-executing HTML tokenizer.
+This direct dependency handles malformed markup without custom HTML parsing.

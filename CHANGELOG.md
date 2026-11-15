@@ -1,5 +1,7 @@
 # Changelog
 
+- Add bounded inert text extraction for HTML-only Mail messages.
+
 This file documents all notable project changes. It uses the
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format. The project
 uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).

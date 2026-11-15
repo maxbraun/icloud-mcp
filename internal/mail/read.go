@@ -52,11 +52,13 @@ func (s *Client) GetMessage(ctx context.Context, input GetMessageInput) (Message
 			result.MessageID = item.Headers.MessageID
 		}
 		var selectedPart *imapadapter.BodyPart
-		hasHTML := false
+		var htmlPart *imapadapter.BodyPart
 		for i := range item.Parts {
 			part := &item.Parts[i]
 			if part.ContentType == "text/html" && !part.Attachment {
-				hasHTML = true
+				if htmlPart == nil {
+					htmlPart = part
+				}
 			}
 			if selectedPart == nil && part.InlinePlain {
 				selectedPart = part
@@ -72,11 +74,10 @@ func (s *Client) GetMessage(ctx context.Context, input GetMessageInput) (Message
 			}
 		}
 		if selectedPart == nil {
-			if hasHTML {
-				result.BodyUnavailableReason = "html_only"
-			} else {
-				result.BodyUnavailableReason = "no_plain_text"
-			}
+			selectedPart = htmlPart
+		}
+		if selectedPart == nil {
+			result.BodyUnavailableReason = "no_text_part"
 			return fitMessageResult(result)
 		}
 		bodyData, err := session.FetchBodyPart(input.UID, selectedPart.Path)
@@ -88,7 +89,7 @@ func (s *Client) GetMessage(ctx context.Context, input GetMessageInput) (Message
 			result.Warnings = append(result.Warnings, Warning{Code: "body_too_large", Message: "plain-text body exceeded the wire-byte limit and was omitted"})
 			return fitMessageResult(result)
 		}
-		body, oversized, decodeErr := decodePlainBody(bodyData.MIMEHeader, bodyData.Body, maxBody)
+		body, oversized, decodeErr := decodeTextBody(bodyData.MIMEHeader, bodyData.Body, maxBody, selectedPart.ContentType)
 		if decodeErr != nil {
 			result.BodyOmitted = true
 			result.Warnings = append(result.Warnings, Warning{Code: "body_decode_failed", Message: "plain-text body could not be safely decoded and was omitted"})
@@ -97,6 +98,7 @@ func (s *Client) GetMessage(ctx context.Context, input GetMessageInput) (Message
 			result.Warnings = append(result.Warnings, Warning{Code: "body_too_large", Message: "decoded plain-text body exceeded max_body_bytes and was omitted"})
 		} else {
 			result.Body = body
+			result.BodySource = selectedPart.ContentType
 		}
 		return fitMessageResult(result)
 	})
@@ -107,6 +109,10 @@ func (s *Client) GetMessage(ctx context.Context, input GetMessageInput) (Message
 }
 
 func decodePlainBody(header, body []byte, maxBytes int) (string, bool, error) {
+	return decodeTextBody(header, body, maxBytes, "text/plain")
+}
+
+func decodeTextBody(header, body []byte, maxBytes int, expectedType string) (string, bool, error) {
 	if len(header) > MaxHeaderBytes || len(body) > MaxWireBodyBytes {
 		return "", true, nil
 	}
@@ -127,7 +133,7 @@ func decodePlainBody(header, body []byte, maxBytes int) (string, bool, error) {
 		return "", false, err
 	}
 	mediaType, _, err := entity.Header.ContentType()
-	if err != nil || !strings.EqualFold(mediaType, "text/plain") {
+	if err != nil || !strings.EqualFold(mediaType, expectedType) || (expectedType != "text/plain" && expectedType != "text/html") {
 		return "", false, errUnsafeMIME
 	}
 	decoded, err := io.ReadAll(io.LimitReader(entity.Body, int64(maxBytes)+1))
@@ -137,7 +143,14 @@ func decodePlainBody(header, body []byte, maxBytes int) (string, bool, error) {
 	if len(decoded) > maxBytes {
 		return "", true, nil
 	}
-	return strings.ToValidUTF8(string(decoded), "\uFFFD"), false, nil
+	text := strings.ToValidUTF8(string(decoded), "\uFFFD")
+	if expectedType == "text/html" {
+		text = readableHTML(text)
+	}
+	if len(text) > maxBytes {
+		return "", true, nil
+	}
+	return text, false, nil
 }
 
 var errUnsafeMIME = &Error{Code: CodeProtocolError, Message: "selected MIME part is not plain text"}

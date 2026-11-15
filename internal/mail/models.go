@@ -127,6 +127,7 @@ type Message struct {
 	ReplyTo               []Address    `json:"replyTo,omitempty"`
 	InReplyTo             []string     `json:"inReplyTo,omitempty"`
 	References            []string     `json:"references,omitempty"`
+	BodySource            string       `json:"bodySource,omitempty"`
 	Body                  string       `json:"body,omitempty"`
 	BodyOmitted           bool         `json:"bodyOmitted,omitempty"`
 	BodyUnavailableReason string       `json:"bodyUnavailableReason,omitempty"`

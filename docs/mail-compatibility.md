@@ -245,3 +245,8 @@ client does not assume this behavior.
 
 Each attempt uses the applicable rate budget. All operations have a 25 second
 MCP tool deadline. The active context also limits each socket deadline.
+
+## Inert HTML text
+
+HTML-only messages return bounded text with bodySource=text/html. Plain text remains preferred.
+Scripts, styles, embedded content, and resource loads are not supported. All content remains untrusted.
