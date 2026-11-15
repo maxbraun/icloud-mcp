@@ -267,3 +267,13 @@ HTTPS uses a separate credential-free transport. Public DNS addresses are valida
 Redirects, IP literals, private destinations, proxies, cookies, custom payloads, and retries are not supported.
 RFC 8058 metadata selects a fixed POST; other links use GET. Neither method proves the business outcome.
 Multi-tenant hosts must isolate MCP registrations per authenticated principal. References are process-local bearer capabilities.
+
+## Read collections
+
+search_mailboxes and get_messages accept 1 to 10 request objects using the corresponding single-item tool fields.
+All items are validated before dispatch. Results preserve request indexes and group search pages by mailbox.
+Each search request has its own UIDVALIDITY and before_uid cursor. Do not compare UIDs across mailboxes.
+Reads run sequentially under one 25-second deadline and existing service rate limits. No write is performed.
+Batch bodies default to 16 KiB and allow at most 20 KiB each. Total output remains bounded.
+A transient error stops dispatch. Pending entries were not read and can be resubmitted after retry guidance.
+Result-omitted entries were read; request those individually. complete does not mean allSucceeded.

@@ -136,7 +136,7 @@ func contactsWriteToolNames() []string {
 }
 
 func mailReadToolNames() []string {
-	return []string{"list_mailboxes", "search_messages", "get_message"}
+	return []string{"list_mailboxes", "search_messages", "get_message", "search_mailboxes", "get_messages"}
 }
 
 func mailMutationToolNames() []string {

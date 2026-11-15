@@ -138,10 +138,10 @@ func TestRegisterMailCombinations(t *testing.T) {
 		send      bool
 		want      []string
 	}{
-		{"reads", false, false, []string{"list_mailboxes", "search_messages", "get_message"}},
-		{"mutations", true, false, []string{"list_mailboxes", "search_messages", "get_message", "set_message_flags", "move_message", "trash_message", "execute_mail_link"}},
-		{"send_independent", false, true, []string{"list_mailboxes", "search_messages", "get_message", "send_message"}},
-		{"all", true, true, []string{"list_mailboxes", "search_messages", "get_message", "set_message_flags", "move_message", "trash_message", "execute_mail_link", "send_message"}},
+		{"reads", false, false, []string{"list_mailboxes", "search_messages", "get_message", "search_mailboxes", "get_messages"}},
+		{"mutations", true, false, []string{"list_mailboxes", "search_messages", "get_message", "search_mailboxes", "get_messages", "set_message_flags", "move_message", "trash_message", "execute_mail_link"}},
+		{"send_independent", false, true, []string{"list_mailboxes", "search_messages", "get_message", "search_mailboxes", "get_messages", "send_message"}},
+		{"all", true, true, []string{"list_mailboxes", "search_messages", "get_message", "search_mailboxes", "get_messages", "set_message_flags", "move_message", "trash_message", "execute_mail_link", "send_message"}},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

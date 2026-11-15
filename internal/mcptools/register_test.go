@@ -137,7 +137,7 @@ func TestCapabilityPlanAllCombinationsAndRegistrationFormula(t *testing.T) {
 				}
 			}
 			if mailEnabled {
-				wantCount += 3
+				wantCount += 5
 			}
 			if effectiveMutation {
 				wantCount += 4

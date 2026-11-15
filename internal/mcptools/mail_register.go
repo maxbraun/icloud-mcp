@@ -34,6 +34,8 @@ func RegisterMail(s *server.MCPServer, deps MailDeps, allowMutations, allowSend 
 		{newListMailboxesTool(), listMailboxesHandler(deps)},
 		{newSearchMessagesTool(), searchMessagesHandler(deps)},
 		{newGetMessageTool(), getMessageHandler(deps)},
+		{newMailBatchTool(true), mailBatchHandler(deps, true)},
+		{newMailBatchTool(false), mailBatchHandler(deps, false)},
 	}
 	if allowMutations {
 		registrations = append(registrations,
