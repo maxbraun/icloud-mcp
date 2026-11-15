@@ -250,3 +250,9 @@ MCP tool deadline. The active context also limits each socket deadline.
 
 HTML-only messages return bounded text with bodySource=text/html. Plain text remains preferred.
 Scripts, styles, embedded content, and resource loads are not supported. All content remains untrusted.
+
+## Structured metadata
+
+Message headers expose bounded List-* fields, Auto-Submitted, and Precedence as arrays.
+Duplicate fields remain distinct. Values are untrusted sender claims, not authorization or authentication evidence.
+List-Unsubscribe-Post is metadata only. Reading a message never performs an action.

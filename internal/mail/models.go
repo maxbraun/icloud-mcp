@@ -123,6 +123,7 @@ type Warning struct {
 }
 
 type Message struct {
+	Headers map[string][]string `json:"headers,omitempty"`
 	MessageSummary
 	ReplyTo               []Address    `json:"replyTo,omitempty"`
 	InReplyTo             []string     `json:"inReplyTo,omitempty"`

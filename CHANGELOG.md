@@ -1,5 +1,7 @@
 # Changelog
 
+- Expose bounded structured Mail automation and list metadata.
+
 - Add bounded inert text extraction for HTML-only Mail messages.
 
 This file documents all notable project changes. It uses the

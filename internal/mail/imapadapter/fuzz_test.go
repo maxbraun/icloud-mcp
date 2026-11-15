@@ -138,13 +138,17 @@ func TestAdapterConversionsAndLimits(t *testing.T) {
 }
 
 func TestCuratedHeaderAndCopyUIDParsing(t *testing.T) {
-	headers, err := parseCuratedHeaders([]byte("Message-ID: <message@example.com>\r\nIn-Reply-To: <parent@example.com>\r\nReferences: <first@example.com> <second@example.com>\r\nReply-To: Person <reply@example.com>\r\n\r\n"))
+	headers, err := parseCuratedHeaders([]byte("Message-ID: <message@example.com>\r\nIn-Reply-To: <parent@example.com>\r\nList-Unsubscribe: <https://example.com/leave>\r\nList-Unsubscribe-Post: List-Unsubscribe=One-Click\r\nList-Help: <mailto:help@example.com>\r\nReferences: <first@example.com> <second@example.com>\r\nReply-To: Person <reply@example.com>\r\n\r\n"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	if headers.MessageID != "message@example.com" || len(headers.References) != 2 || len(headers.ReplyTo) != 1 {
 		t.Fatalf("headers = %#v", headers)
 	}
+	if len(headers.Fields["List-Unsubscribe"]) != 1 || headers.Fields["List-Unsubscribe-Post"][0] != "List-Unsubscribe=One-Click" {
+		t.Fatalf("missing structured headers: %+v", headers.Fields)
+	}
+
 	for _, data := range [][]byte{
 		[]byte("Message-ID: not-an-id\r\n\r\n"),
 		[]byte("Reply-To: invalid address\r\n\r\n"),
